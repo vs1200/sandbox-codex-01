@@ -39,68 +39,62 @@ export function ChoicePanel() {
 
   return (
     <div className="bg-bg-secondary border border-border rounded-lg p-4 w-full max-w-xl">
-      {/* 現在ミノの配置候補 */}
-      {nextChoices.length > 0 && (
-        <div className="mb-3">
-          <p className="text-xs text-text-dim mb-2 font-bold">配置候補</p>
-          <div className="flex flex-wrap gap-2">
-            {nextChoices.map((nextTane) => (
-              <button
-                type="button"
-                key={`choice-${nextTane}`}
-                onClick={() => selectChoice(nextTane, false)}
-                className="p-2 bg-bg-board border border-border rounded-lg
-									hover:border-accent transition-colors cursor-pointer"
-                title={`${currentMino} → ${nextTane}`}
-              >
-                <ChoicePreview
-                  mino={currentMino}
-                  currentTane={tane}
-                  nextTane={nextTane}
-                  placedCellsOverride={nextPlacements.get(nextTane)}
-                />
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      <p className="text-xs text-text-dim mb-2 font-bold">配置候補</p>
+      <div className="flex flex-nowrap gap-2 overflow-x-auto items-stretch">
+        {/* 現在ミノの配置候補 */}
+        {nextChoices.map((nextTane) => (
+          <button
+            type="button"
+            key={`choice-${nextTane}`}
+            onClick={() => selectChoice(nextTane, false)}
+            className="p-2 bg-bg-board border border-border rounded-lg
+							hover:border-accent transition-colors cursor-pointer shrink-0"
+            title={`${currentMino} → ${nextTane}`}
+          >
+            <ChoicePreview
+              mino={currentMino}
+              currentTane={tane}
+              nextTane={nextTane}
+              placedCellsOverride={nextPlacements.get(nextTane)}
+            />
+          </button>
+        ))}
 
-      {/* HOLDミノの配置候補 */}
-      {holdActivated && holdChoices.length > 0 && (
-        <div className="mb-3 pt-3 border-t border-border">
-          <p className="text-xs text-text-dim mb-2 font-bold">
-            HOLD候補（{holdMino?.toUpperCase()}）
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {holdChoices.map((nextTane) => (
-              <button
-                type="button"
-                key={`hold-${nextTane}`}
-                onClick={() => selectChoice(nextTane, true)}
-                className="p-2 bg-bg-board border border-accent/40 rounded-lg
-									hover:border-accent transition-colors cursor-pointer"
-                title={`HOLD: ${holdMino} → ${nextTane}`}
-              >
-                <ChoicePreview
-                  mino={holdMino as MinoType}
-                  currentTane={tane}
-                  nextTane={nextTane}
-                  placedCellsOverride={holdPlacements.get(nextTane)}
-                />
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+        {/* HOLDミノの配置候補 (区切り) */}
+        {holdActivated && holdChoices.length > 0 && (
+          <div className="shrink-0 w-px bg-border/60 self-stretch" />
+        )}
+        {holdActivated &&
+          holdChoices.map((nextTane) => (
+            <button
+              type="button"
+              key={`hold-${nextTane}`}
+              onClick={() => selectChoice(nextTane, true)}
+              className="p-2 bg-bg-board border border-accent/40 rounded-lg
+								hover:border-accent transition-colors cursor-pointer shrink-0"
+              title={`HOLD: ${holdMino} → ${nextTane}`}
+            >
+              <ChoicePreview
+                mino={holdMino as MinoType}
+                currentTane={tane}
+                nextTane={nextTane}
+                placedCellsOverride={holdPlacements.get(nextTane)}
+              />
+            </button>
+          ))}
 
-      {/* HOLD / Shuffle ボタン */}
-      <div className="flex gap-2 mt-3">
+        {/* HOLD / Shuffle ボタン (区切り) */}
+        {(!holdActivated || ren === -1) && (
+          <div className="shrink-0 w-px bg-border/60 self-stretch" />
+        )}
         {!holdActivated && (
           <button
             type="button"
             onClick={activateHold}
-            className="px-4 py-2 bg-bg-board border border-border rounded-lg text-sm
-							hover:border-accent transition-colors cursor-pointer"
+            className="p-2 bg-bg-board border border-border rounded-lg
+							hover:border-accent transition-colors cursor-pointer shrink-0
+							flex items-center justify-center text-xs font-bold"
+            style={{ width: "67px", height: "67px" }}
           >
             HOLD
           </button>
@@ -109,8 +103,10 @@ export function ChoicePanel() {
           <button
             type="button"
             onClick={shuffle}
-            className="px-4 py-2 bg-bg-board border border-border rounded-lg text-sm
-							hover:border-accent transition-colors cursor-pointer"
+            className="p-2 bg-bg-board border border-border rounded-lg
+							hover:border-accent transition-colors cursor-pointer shrink-0
+							flex items-center justify-center text-xs font-bold"
+            style={{ width: "67px", height: "67px" }}
           >
             Shuffle
           </button>
