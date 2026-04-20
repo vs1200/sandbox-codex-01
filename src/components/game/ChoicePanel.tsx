@@ -17,8 +17,6 @@ export function ChoicePanel() {
   const activateHold = useGameStore((s) => s.activateHold);
   const shuffle = useGameStore((s) => s.shuffle);
 
-  if (gameStatus !== "playing") return null;
-
   const currentMino = minoQueue[0];
 
   const nextPlacements = useMemo(
@@ -36,6 +34,8 @@ export function ChoicePanel() {
         : new Map<number, Set<number>>(),
     [holdMino, tane, holdChoices],
   );
+
+  if (gameStatus !== "playing") return null;
 
   return (
     <div className="bg-bg-secondary border border-border rounded-lg p-4 w-full max-w-xl">
