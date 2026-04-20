@@ -8,6 +8,134 @@ import {
 } from "./types";
 
 /**
+ * 各ミノの「盤面上部に表示される初期位置」のセル番号を返す。
+ * 落下アニメーションの開始位置として利用する (row 0-1, col 3-6)。
+ */
+export function getInitialMinoCells(mino: MinoType): number[] {
+  switch (mino) {
+    case "i":
+      return [3, 4, 5, 6];
+    case "o":
+      return [4, 5, 14, 15];
+    case "j":
+      return [3, 13, 14, 15];
+    case "l":
+      return [5, 13, 14, 15];
+    case "s":
+      return [4, 5, 13, 14];
+    case "z":
+      return [3, 4, 14, 15];
+    case "t":
+      return [4, 13, 14, 15];
+  }
+}
+
+/**
+ * 落下アニメーションの全フレームを計算する。
+ *
+ * 設計方針:
+ * - 各ステップは「物理的に妥当な状態」でなければならない:
+ *   1. ミノセル自身がタネと重なってはならない
+ *   2. ミノの真下面 (各セルの直下のうち自分のセルでない位置) がタネと重なってはならない
+ *      (= タネの上に「乗っかった」中間状態を生成しない)
+ *   3. 列は PLAY_AREA 内
+ * - まず最終形状 (= 回転後) を最上行から target まで 1 マスずつ下げる経路を試す。
+ *   全ステップが物理的に妥当 → このパスを採用 (落下開始時点から最終回転)。
+ * - 上記が成立しない場合 (T-spin 等) は、初期形状で落とせる所まで落とし、最終フレームで
+ *   target にスナップ (回転して入る)。
+ */
+export function computeFallFrames(
+  prevTane: number,
+  initialCells: number[],
+  targetCells: number[],
+): number[][] {
+  if (targetCells.length === 0) {
+    return [initialCells];
+  }
+
+  const taneSet = new Set(getTaneCells(prevTane));
+
+  const isCellsValid = (cells: number[]): boolean => {
+    // 列範囲
+    for (const c of cells) {
+      const col = c % BOARD_COLS;
+      if (col < PLAY_AREA_START || col > PLAY_AREA_END) return false;
+    }
+    // ミノとタネの直接衝突
+    for (const c of cells) {
+      if (taneSet.has(c)) return false;
+    }
+    return true;
+  };
+
+  /** ミノの直下面がタネで塞がれているか (= これ以上落とすとタネを貫通する) */
+  const isLandedOnTane = (cells: number[]): boolean => {
+    const cellsSet = new Set(cells);
+    for (const c of cells) {
+      const below = c + BOARD_COLS;
+      if (cellsSet.has(below)) continue;
+      if (taneSet.has(below)) return true;
+    }
+    return false;
+  };
+
+  const targetMinRow = Math.floor(Math.min(...targetCells) / BOARD_COLS);
+
+  // 最終形状を上方 k マスシフト (k = targetMinRow が最上部) して 1 マスずつ降ろす
+  const rotatedFrames: number[][] = [];
+  let rotatedOk = true;
+  for (let k = targetMinRow; k >= 0; k--) {
+    const cells = targetCells.map((c) => c - k * BOARD_COLS);
+    if (!isCellsValid(cells)) {
+      rotatedOk = false;
+      break;
+    }
+    rotatedFrames.push(cells);
+    // 真下面チェック: target に到達する前 (k > 0) に「乗ってる」状態になったらアウト
+    if (k > 0 && isLandedOnTane(cells)) {
+      rotatedOk = false;
+      break;
+    }
+  }
+
+  if (rotatedOk && rotatedFrames.length > 0) {
+    return rotatedFrames;
+  }
+
+  // フォールバック: 初期形状で物理的に落とせる所まで落下 → 最終フレームで target にスナップ
+  const initialMinRow =
+    initialCells.length > 0
+      ? Math.floor(Math.min(...initialCells) / BOARD_COLS)
+      : 0;
+  const maxFallSteps = Math.max(targetMinRow - initialMinRow, 0);
+
+  const fallback: number[][] = [];
+  for (let s = 0; s <= maxFallSteps; s++) {
+    const cells = initialCells.map((c) => c + s * BOARD_COLS);
+    if (!isCellsValid(cells)) break;
+    fallback.push(cells);
+    // 次のステップでタネに衝突 / または乗ってる状態 → ここで止める
+    if (s < maxFallSteps && isLandedOnTane(cells)) break;
+  }
+
+  // 最終フレームで target にスナップ (回転して入る)
+  if (
+    fallback.length === 0 ||
+    !arraysEqualAsSet(fallback[fallback.length - 1], targetCells)
+  ) {
+    fallback.push(targetCells);
+  }
+  return fallback;
+}
+
+function arraysEqualAsSet(a: number[], b: number[]): boolean {
+  if (a.length !== b.length) return false;
+  const setA = new Set(a);
+  for (const v of b) if (!setA.has(v)) return false;
+  return true;
+}
+
+/**
  * 各ミノの全回転パターン（bounding box 左上原点）。
  * セルは [row, col] のペア（左上が (0, 0)）。
  */

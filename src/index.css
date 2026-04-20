@@ -42,13 +42,11 @@ body {
 }
 
 @keyframes drop-in {
-  from {
-    transform: translateY(-100%);
-    opacity: 0.6;
+  0% {
+    filter: brightness(2.2);
   }
-  to {
-    transform: translateY(0);
-    opacity: 1;
+  100% {
+    filter: brightness(1);
   }
 }
 
@@ -65,7 +63,7 @@ body {
 }
 
 .animate-place {
-  animation: drop-in 250ms ease-out;
+  animation: drop-in 140ms ease-out;
 }
 
 .animate-clear {

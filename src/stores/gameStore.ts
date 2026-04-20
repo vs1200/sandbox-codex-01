@@ -1,7 +1,11 @@
 import { create } from "zustand";
 import { searchChoices } from "../data/choiceDatabase";
 import { generateBag, refillQueue } from "../logic/bag";
-import { computePlacedMinoCells } from "../logic/placement";
+import {
+  computeFallFrames,
+  computePlacedMinoCells,
+  getInitialMinoCells,
+} from "../logic/placement";
 import { getRandomInitialTane, getTaneCells } from "../logic/tane";
 import type {
   AnimationState,
@@ -9,7 +13,12 @@ import type {
   GameStatus,
   MinoType,
 } from "../logic/types";
-import { TA_TARGET_REN } from "../logic/types";
+import {
+  CLEAR_DURATION_MS,
+  FALL_STEP_MS,
+  PLACE_HOLD_MS,
+  TA_TARGET_REN,
+} from "../logic/types";
 
 interface GameState {
   gameStatus: GameStatus;
@@ -152,6 +161,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     const targetCells =
       placedCells.size > 0 ? [...placedCells] : getTaneCells(nextTane);
 
+    // 落下アニメーションのフレームを計算
+    const initialCells = getInitialMinoCells(placedMino);
+    const frames = computeFallFrames(prevTane, initialCells, targetCells);
+
     let newGameStatus: GameStatus = "playing";
     let newTimeResult = state.timeResult;
     let newElapsed = state.elapsedTime;
@@ -181,10 +194,14 @@ export const useGameStore = create<GameState>((set, get) => ({
         prevTane,
         placedMino,
         targetCells,
+        frames,
       },
     });
 
     // アニメーションフェーズ遷移
+    // 落下ステップ数 + 着地保持時間後に clearing、その後に animation をクリア
+    const placingDuration =
+      Math.max(frames.length - 1, 0) * FALL_STEP_MS + PLACE_HOLD_MS;
     setTimeout(() => {
       const current = get();
       if (current.animation?.prevTane === prevTane) {
@@ -202,9 +219,9 @@ export const useGameStore = create<GameState>((set, get) => ({
           ) {
             set({ animation: null });
           }
-        }, 180);
+        }, CLEAR_DURATION_MS);
       }
-    }, 250);
+    }, placingDuration);
   },
 
   activateHold: () => {

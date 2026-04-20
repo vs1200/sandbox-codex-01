@@ -8,6 +8,8 @@ export interface AnimationState {
   prevTane: number;
   placedMino: MinoType;
   targetCells: number[];
+  /** 落下中の各フレームで描画する 4 セル。frames[0] = 開始位置, frames[length - 1] = 着地位置 */
+  frames: number[][];
 }
 
 export interface ChoiceEntry {
@@ -38,3 +40,10 @@ export const TA_TARGET_REN = 25;
 
 /** デザイン基準上の 1 セルのサイズ (px)。Board / MinoPreview のサイズ算出に利用。 */
 export const CELL_SIZE_PX = 28;
+
+/** ミノ配置アニメーションで 1 マス落下するのに要する時間 (ms) */
+export const FALL_STEP_MS = 10;
+/** 着地後、ライン消しに移るまでのフラッシュ保持時間 (ms) */
+export const PLACE_HOLD_MS = 90;
+/** ライン消しエフェクトの長さ (ms) */
+export const CLEAR_DURATION_MS = 180;
