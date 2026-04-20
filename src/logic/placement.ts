@@ -258,49 +258,6 @@ function symmetricDiff(a: ReadonlySet<number>, b: ReadonlySet<number>): number {
   return diff;
 }
 
-function setsEqual(a: ReadonlySet<number>, b: ReadonlySet<number>): boolean {
-  if (a.size !== b.size) return false;
-  for (const x of a) if (!b.has(x)) return false;
-  return true;
-}
-
-/**
- * 配置の「自然なハードドロップらしさ」スコア。
- *   [最深行 (maxRow), 最深行のセル数] のタプルを辞書順比較で大きいほど自然。
- *   - maxRow が大きい = ピースが盤面の下方に位置する
- *   - 最深行のセル数が多い = ピース本体が下にある (タックではなくハードドロップ)
- */
-function naturalDropScore(cells: ReadonlyArray<number>): [number, number] {
-  let maxRow = 0;
-  for (const cell of cells) {
-    const r = Math.floor(cell / 10);
-    if (r > maxRow) maxRow = r;
-  }
-  let cellsAtMax = 0;
-  for (const cell of cells) {
-    if (Math.floor(cell / 10) === maxRow) cellsAtMax++;
-  }
-  return [maxRow, cellsAtMax];
-}
-
-function pickByNaturalDrop(
-  candidates: ReadonlyArray<PlacementCandidate>,
-): PlacementCandidate {
-  let best = candidates[0];
-  let bestScore = naturalDropScore(best.cells);
-  for (let i = 1; i < candidates.length; i++) {
-    const s = naturalDropScore(candidates[i].cells);
-    if (s[0] > bestScore[0] || (s[0] === bestScore[0] && s[1] > bestScore[1])) {
-      best = candidates[i];
-      bestScore = s;
-    }
-  }
-  return best;
-}
-
-const cellsKey = (cells: ReadonlyArray<number>) =>
-  [...cells].sort((a, b) => a - b).join(",");
-
 /**
  * 配置されるミノ 4 セルの盤面座標を返す。
  *
@@ -308,7 +265,6 @@ const cellsKey = (cells: ReadonlyArray<number>) =>
  *   1. currentTane に対して、与えたミノの全配置候補を列挙する
  *   2. 1 行以上ライン消しを起こす配置のみ抽出
  *   3. 配置後タネが nextTane と一致するものを最優先で返す
- *      （複数あれば自然なハードドロップを優先）
  *   4. 一致するものが無い場合（choicedb が壊れているケース）でも、
  *      ライン消しを起こす配置のうち最も nextTane に近いものを返す
  *      （視覚的に妥当な「実際に置かれるであろう」ミノを描画するため）
@@ -325,11 +281,13 @@ export function computePlacedMinoCells(
 
   const clearing = candidates.filter((c) => c.clearedRows.length > 0);
 
-  const exactMatches = clearing.filter((c) =>
-    setsEqual(c.postClearCells, nextCells),
-  );
-  if (exactMatches.length > 0) {
-    return new Set(pickByNaturalDrop(exactMatches).cells);
+  for (const cand of clearing) {
+    if (
+      cand.postClearCells.size === nextCells.size &&
+      [...cand.postClearCells].every((cell) => nextCells.has(cell))
+    ) {
+      return new Set(cand.cells);
+    }
   }
 
   if (clearing.length > 0) {
@@ -355,7 +313,6 @@ export function computePlacedMinoCells(
  * その場合でも候補同士で同じ配置を返してしまうと UI 上で重複表示になる。
  * 本関数では:
  *   1. 厳密一致する nextTane に対しては該当配置を割り当て
- *      （複数候補があれば自然なハードドロップを優先）
  *   2. 残りの nextTane に対しては、まだ使われていない配置のうち
  *      symmetricDiff が最小のものを greedy に割り当てる
  */
@@ -370,23 +327,30 @@ export function computePlacedMinoCellsForChoices(
   );
   const result = new Map<number, Set<number>>();
   const usedKeys = new Set<string>();
+
+  const cellsKey = (cells: ReadonlyArray<number>) =>
+    [...cells].sort((a, b) => a - b).join(",");
+
   const remaining: number[] = [];
 
-  // 1) 厳密一致を優先割り当て（複数候補がある場合は最深配置を優先）
+  // 1) 厳密一致を優先割り当て
   for (const nt of nextTanes) {
     const nextCells = new Set(getTaneCells(nt));
-    const exactCands = candidates.filter(
-      (cand) =>
-        !usedKeys.has(cellsKey(cand.cells)) &&
-        setsEqual(cand.postClearCells, nextCells),
-    );
-    if (exactCands.length === 0) {
-      remaining.push(nt);
-      continue;
+    let assigned = false;
+    for (const cand of candidates) {
+      const k = cellsKey(cand.cells);
+      if (usedKeys.has(k)) continue;
+      if (
+        cand.postClearCells.size === nextCells.size &&
+        [...cand.postClearCells].every((cell) => nextCells.has(cell))
+      ) {
+        result.set(nt, new Set(cand.cells));
+        usedKeys.add(k);
+        assigned = true;
+        break;
+      }
     }
-    const best = pickByNaturalDrop(exactCands);
-    result.set(nt, new Set(best.cells));
-    usedKeys.add(cellsKey(best.cells));
+    if (!assigned) remaining.push(nt);
   }
 
   // 2) 残りは未使用配置から最近接を greedy に
