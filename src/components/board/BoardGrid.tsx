@@ -3,6 +3,7 @@ import { getTaneCells } from "../../logic/tane";
 import {
   BOARD_COLS,
   BOARD_ROWS,
+  CELL_SIZE_PX,
   MINO_COLORS,
   type MinoType,
   PLAY_AREA_END,
@@ -104,9 +105,9 @@ export function BoardGrid() {
       style={{
         gridTemplateColumns: `repeat(${BOARD_COLS}, 1fr)`,
         gridTemplateRows: `repeat(${BOARD_ROWS}, 1fr)`,
-        // ステージ (デザイン基準サイズ) 内の高さ全体に揃え、aspect-ratio で幅を連動
-        height: "100%",
-        aspectRatio: `${BOARD_COLS} / ${BOARD_ROWS}`,
+        // Board はセルサイズ×行・列数で固定。周囲の他コンポーネントに左右されないようにする。
+        width: BOARD_COLS * CELL_SIZE_PX,
+        height: BOARD_ROWS * CELL_SIZE_PX,
       }}
     >
       {cells.map((cell, i) => (

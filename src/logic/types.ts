@@ -35,3 +35,6 @@ export const BOARD_COLS = 10;
 export const PLAY_AREA_START = 3;
 export const PLAY_AREA_END = 6;
 export const TA_TARGET_REN = 25;
+
+/** デザイン基準上の 1 セルのサイズ (px)。Board / MinoPreview のサイズ算出に利用。 */
+export const CELL_SIZE_PX = 28;
