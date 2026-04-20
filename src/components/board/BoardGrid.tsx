@@ -104,7 +104,8 @@ export function BoardGrid() {
       style={{
         gridTemplateColumns: `repeat(${BOARD_COLS}, 1fr)`,
         gridTemplateRows: `repeat(${BOARD_ROWS}, 1fr)`,
-        width: "clamp(200px, 30vw, 320px)",
+        // ステージ (デザイン基準サイズ) 内の高さ全体に揃え、aspect-ratio で幅を連動
+        height: "100%",
         aspectRatio: `${BOARD_COLS} / ${BOARD_ROWS}`,
       }}
     >
