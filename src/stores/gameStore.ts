@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { searchChoices } from "../data/choiceDatabase";
 import { generateBag, refillQueue } from "../logic/bag";
+import { computePlacedMinoCells } from "../logic/placement";
 import { getRandomInitialTane, getTaneCells } from "../logic/tane";
 import type {
   AnimationState,
@@ -146,7 +147,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     const placedMino = isHoldChoice
       ? (state.holdMino as MinoType)
       : currentMino;
-    const targetCells = getTaneCells(nextTane);
+    // 実際に配置されるミノ 4 セル（クリア前）をアニメーション対象とする
+    const placedCells = computePlacedMinoCells(placedMino, prevTane, nextTane);
+    const targetCells =
+      placedCells.size > 0 ? [...placedCells] : getTaneCells(nextTane);
 
     let newGameStatus: GameStatus = "playing";
     let newTimeResult = state.timeResult;
