@@ -25,6 +25,7 @@
     "lefthook": "^2.1.6",
     "tailwindcss": "^4.1.4",
     "typescript": "~6.0.2",
-    "vite": "^8.0.4"
+    "vite": "^8.0.4",
+    "vite-plugin-qrcode": "^0.4.1"
   }
 }
