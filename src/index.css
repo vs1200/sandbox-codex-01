@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Noto Sans JP", system-ui, sans-serif;
+
+  --color-bg: #0f0f13;
+  --color-bg-secondary: #1a1a24;
+  --color-bg-board: #141420;
+  --color-border: #2a2a3a;
+  --color-text: #e0e0e8;
+  --color-text-dim: #8888a0;
+  --color-accent: #6366f1;
+  --color-accent-hover: #818cf8;
+
+  --color-wall: #3a3a4a;
+  --color-cell-empty: #1a1a28;
+
+  --color-mino-i: #00d4ff;
+  --color-mino-o: #ffdd00;
+  --color-mino-j: #2266ff;
+  --color-mino-l: #ff8800;
+  --color-mino-s: #44ff00;
+  --color-mino-z: #ff3333;
+  --color-mino-t: #aa44ff;
+}
+
+html {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+}
+
+#root {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes drop-in {
+  from {
+    transform: translateY(-100%);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes flash-out {
+  0% {
+    filter: brightness(2.5);
+  }
+  50% {
+    filter: brightness(1.5);
+  }
+  100% {
+    opacity: 0.3;
+  }
+}
+
+.animate-place {
+  animation: drop-in 250ms ease-out;
+}
+
+.animate-clear {
+  animation: flash-out 180ms ease-in forwards;
+}
