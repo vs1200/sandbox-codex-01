@@ -10,7 +10,7 @@ function App() {
     <div className="flex flex-col items-center min-h-dvh">
       <header className="w-full py-3 px-4 text-center border-b border-border">
         <h1 className="text-xl font-bold tracking-wide text-text">
-          tetris-ren-ren
+          テトリスREN練習
         </h1>
       </header>
 
