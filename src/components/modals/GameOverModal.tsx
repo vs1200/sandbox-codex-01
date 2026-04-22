@@ -9,7 +9,7 @@ export function GameOverModal() {
 
   return (
     <div className="fixed inset-0 pointer-events-none flex items-center justify-center z-50">
-      <div className="pointer-events-auto bg-bg-secondary/95 border border-border rounded-xl p-8 text-center max-w-sm mx-4 shadow-2xl backdrop-blur-[1px]">
+      <div className="pointer-events-auto bg-bg-secondary/70 border border-border rounded-xl p-8 text-center max-w-sm mx-4 shadow-2xl backdrop-blur-[2px]">
         <h2 className="text-2xl font-bold mb-4">GAME OVER</h2>
 
         {mode === "timeAttack" && ren >= 25 ? (
