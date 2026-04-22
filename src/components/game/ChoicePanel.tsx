@@ -4,6 +4,9 @@ import type { MinoType } from "../../logic/types";
 import { useGameStore } from "../../stores/gameStore";
 import { ChoicePreview } from "./ChoicePreview";
 
+const CHOICE_PREVIEW_CELL_SIZE = 14;
+const CHOICE_BUTTON_SIZE = CHOICE_PREVIEW_CELL_SIZE * 4 + 3 + 16;
+
 export function ChoicePanel() {
   const minoQueue = useGameStore((s) => s.minoQueue);
   const holdMino = useGameStore((s) => s.holdMino);
@@ -55,6 +58,7 @@ export function ChoicePanel() {
               mino={currentMino}
               currentTane={tane}
               nextTane={nextTane}
+              size={CHOICE_PREVIEW_CELL_SIZE}
               placedCellsOverride={nextPlacements.get(nextTane)}
             />
           </button>
@@ -78,6 +82,7 @@ export function ChoicePanel() {
                 mino={holdMino as MinoType}
                 currentTane={tane}
                 nextTane={nextTane}
+                size={CHOICE_PREVIEW_CELL_SIZE}
                 placedCellsOverride={holdPlacements.get(nextTane)}
               />
             </button>
@@ -94,7 +99,10 @@ export function ChoicePanel() {
             className="p-2 bg-bg-board border border-border rounded-lg
 							hover:border-accent transition-colors cursor-pointer shrink-0
 							flex items-center justify-center text-xs font-bold"
-            style={{ width: "67px", height: "67px" }}
+            style={{
+              width: `${CHOICE_BUTTON_SIZE}px`,
+              height: `${CHOICE_BUTTON_SIZE}px`,
+            }}
           >
             HOLD
           </button>
@@ -106,7 +114,10 @@ export function ChoicePanel() {
             className="p-2 bg-bg-board border border-border rounded-lg
 							hover:border-accent transition-colors cursor-pointer shrink-0
 							flex items-center justify-center text-xs font-bold"
-            style={{ width: "67px", height: "67px" }}
+            style={{
+              width: `${CHOICE_BUTTON_SIZE}px`,
+              height: `${CHOICE_BUTTON_SIZE}px`,
+            }}
           >
             Shuffle
           </button>
