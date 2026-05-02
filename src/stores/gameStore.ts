@@ -18,6 +18,8 @@ import {
   FALL_STEP_MS,
   PLACE_HOLD_MS,
   TA_TARGET_REN,
+  TIME_ATTACK_BONUS_MS,
+  TIME_ATTACK_LIMIT_MS,
 } from "../logic/types";
 
 interface GameState {
@@ -41,6 +43,7 @@ interface GameState {
 
   startTime: number | null;
   elapsedTime: number;
+  timeBonusEffectMs: number;
   timeResult: string;
 
   // アクション
@@ -82,6 +85,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   animation: null,
   startTime: null,
   elapsedTime: 0,
+  timeBonusEffectMs: 0,
   timeResult: "",
 
   startGame: (mode: GameMode) => {
@@ -112,6 +116,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       animation: null,
       startTime: mode === "timeAttack" ? Date.now() : null,
       elapsedTime: 0,
+      timeBonusEffectMs: 0,
       timeResult: "",
     });
   },
@@ -168,6 +173,12 @@ export const useGameStore = create<GameState>((set, get) => ({
     let newGameStatus: GameStatus = "playing";
     let newTimeResult = state.timeResult;
     let newElapsed = state.elapsedTime;
+    let newTimeBonusEffectMs = state.timeBonusEffectMs;
+
+    if (isTA) {
+      newElapsed = Math.max(0, state.elapsedTime - TIME_ATTACK_BONUS_MS);
+      newTimeBonusEffectMs = Date.now();
+    }
 
     if (reachedTarget || isGameOver) {
       newGameStatus = "gameover";
@@ -188,6 +199,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       holdChoices: newHoldChoices,
       gameStatus: newGameStatus,
       elapsedTime: newElapsed,
+      timeBonusEffectMs: newTimeBonusEffectMs,
       timeResult: newTimeResult,
       animation: {
         phase: "placing",
@@ -281,6 +293,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       animation: null,
       startTime: state.mode === "timeAttack" ? Date.now() : null,
       elapsedTime: 0,
+      timeBonusEffectMs: 0,
       timeResult: "",
     });
   },
@@ -301,6 +314,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       animation: null,
       startTime: null,
       elapsedTime: 0,
+      timeBonusEffectMs: 0,
       timeResult: "",
     });
   },
@@ -308,7 +322,12 @@ export const useGameStore = create<GameState>((set, get) => ({
   updateTimer: () => {
     const state = get();
     if (state.startTime && state.gameStatus === "playing") {
-      set({ elapsedTime: Date.now() - state.startTime });
+      const elapsed = Date.now() - state.startTime;
+      if (state.mode === "timeAttack" && elapsed >= TIME_ATTACK_LIMIT_MS) {
+        set({ gameStatus: "gameover", elapsedTime: TIME_ATTACK_LIMIT_MS });
+        return;
+      }
+      set({ elapsedTime: elapsed });
     }
   },
 

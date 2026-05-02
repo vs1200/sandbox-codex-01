@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useFitScale } from "../../hooks/useFitScale";
 import { BOARD_COLS, BOARD_ROWS, CELL_SIZE_PX } from "../../logic/types";
 import { useGameStore } from "../../stores/gameStore";
@@ -16,9 +16,23 @@ const DESIGN_HEIGHT = BOARD_ROWS * CELL_SIZE_PX;
 
 export function GameContainer() {
   const gameStatus = useGameStore((s) => s.gameStatus);
+  const mode = useGameStore((s) => s.mode);
+  const startTime = useGameStore((s) => s.startTime);
+  const updateTimer = useGameStore((s) => s.updateTimer);
   const stageRef = useRef<HTMLDivElement>(null);
   // 0.96 → 端末ごとの差を吸収しつつ上下左右に最小限の余白を残す
   const scale = useFitScale(stageRef, DESIGN_WIDTH, DESIGN_HEIGHT, 0.96);
+
+  useEffect(() => {
+    if (mode !== "timeAttack" || !startTime || gameStatus !== "playing") return;
+    let frameId: number;
+    const tick = () => {
+      updateTimer();
+      frameId = requestAnimationFrame(tick);
+    };
+    frameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameId);
+  }, [mode, startTime, gameStatus, updateTimer]);
 
   if (gameStatus === "idle") return null;
 

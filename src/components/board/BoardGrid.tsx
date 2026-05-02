@@ -11,6 +11,7 @@ import {
   BOARD_ROWS,
   CELL_SIZE_PX,
   MINO_COLORS,
+  TIME_ATTACK_LIMIT_MS,
 } from "../../logic/types";
 import { useGameStore } from "../../stores/gameStore";
 
@@ -18,6 +19,9 @@ export function BoardGrid() {
   const tane = useGameStore((s) => s.tane);
   const minoQueue = useGameStore((s) => s.minoQueue);
   const animation = useGameStore((s) => s.animation);
+  const mode = useGameStore((s) => s.mode);
+  const elapsedTime = useGameStore((s) => s.elapsedTime);
+  const timeBonusEffectMs = useGameStore((s) => s.timeBonusEffectMs);
 
   const { step: fallStep, isLanded: isPlaceLanded } =
     useFallAnimationStep(animation);
@@ -63,9 +67,13 @@ export function BoardGrid() {
     ],
   );
 
+  const remainingMs = Math.max(0, TIME_ATTACK_LIMIT_MS - elapsedTime);
+  const isHurry = remainingMs <= 3000;
+  const showBonus = Date.now() - timeBonusEffectMs < 450;
+
   return (
     <div
-      className="grid border border-border rounded-md overflow-hidden"
+      className="relative grid border border-border rounded-md overflow-hidden"
       style={{
         gridTemplateColumns: `repeat(${BOARD_COLS}, 1fr)`,
         gridTemplateRows: `repeat(${BOARD_ROWS}, 1fr)`,
@@ -84,6 +92,31 @@ export function BoardGrid() {
           }}
         />
       ))}
+      {mode === "timeAttack" && (
+        <div className="absolute left-2 bottom-2 pointer-events-none">
+          <p className="text-[11px] text-text-dim leading-none">TIME</p>
+          <p
+            className={`text-sm font-mono font-bold leading-none mt-1 ${isHurry ? "text-red-500" : "text-text"}`}
+          >
+            {formatTimeDisplay(remainingMs)}
+          </p>
+          {showBonus && (
+            <p className="text-xs font-bold text-emerald-400 animate-time-bonus">
+              +1.00s
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
+}
+
+function formatTimeDisplay(ms: number): string {
+  const totalSec = Math.floor(ms / 1000);
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  const millis = Math.floor((ms % 1000) / 10);
+  const secStr = sec < 10 ? `0${sec}` : `${sec}`;
+  const msStr = millis < 10 ? `0${millis}` : `${millis}`;
+  return `${min}:${secStr}.${msStr}`;
 }
