@@ -11,7 +11,7 @@ export function ModeSelector() {
   return (
     <div className="flex flex-col items-center justify-center gap-6 flex-1 p-8">
       <p className="text-text-dim text-lg">モードを選択してください</p>
-      <div className="flex gap-4">
+      <div className="flex gap-4 flex-wrap justify-center">
         <button
           type="button"
           onClick={() => handleStart("infinite")}
@@ -28,11 +28,21 @@ export function ModeSelector() {
         >
           TAモード
         </button>
+        <button
+          type="button"
+          onClick={() => handleStart("timeSurvival")}
+          className="px-8 py-4 bg-bg-secondary text-text border border-border rounded-lg text-lg font-bold
+						hover:border-accent transition-colors cursor-pointer"
+        >
+          持ち時間モード
+        </button>
       </div>
       <p className="text-text-dim text-sm max-w-md text-center">
         無限モード: できるだけ長くRENを繋ぎ続けましょう
         <br />
         TAモード: 25 REN をできるだけ早く達成しましょう
+        <br />
+        持ち時間モード: 10秒から始まり、タイムアップまでの最大RENを競います
       </p>
     </div>
   );
