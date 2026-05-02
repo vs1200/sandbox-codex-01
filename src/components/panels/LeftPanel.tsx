@@ -8,13 +8,18 @@ export function LeftPanel() {
   const ren = useGameStore((s) => s.ren);
   const mode = useGameStore((s) => s.mode);
   const elapsedTime = useGameStore((s) => s.elapsedTime);
+  const timeLeftMs = useGameStore((s) => s.timeLeftMs);
   const startTime = useGameStore((s) => s.startTime);
   const gameStatus = useGameStore((s) => s.gameStatus);
   const updateTimer = useGameStore((s) => s.updateTimer);
 
   // タイマー更新
   useEffect(() => {
-    if (mode !== "timeAttack" || !startTime || gameStatus !== "playing") {
+    if (
+      (mode !== "timeAttack" && mode !== "timeSurvival") ||
+      !startTime ||
+      gameStatus !== "playing"
+    ) {
       return;
     }
     let frameId: number;
@@ -46,12 +51,14 @@ export function LeftPanel() {
         </div>
       )}
 
-      {/* Timer (TA mode) */}
-      {mode === "timeAttack" && (
+      {/* Timer */}
+      {(mode === "timeAttack" || mode === "timeSurvival") && (
         <div className="bg-bg-secondary border border-border rounded-lg p-3 text-center">
           <p className="text-xs text-text-dim mb-1">TIME</p>
           <p className="text-sm font-mono font-bold">
-            {formatTimeDisplay(elapsedTime)}
+            {mode === "timeAttack"
+              ? formatTimeDisplay(elapsedTime)
+              : formatCountdownDisplay(timeLeftMs)}
           </p>
         </div>
       )}
@@ -67,4 +74,13 @@ function formatTimeDisplay(ms: number): string {
   const secStr = sec < 10 ? `0${sec}` : `${sec}`;
   const msStr = millis < 10 ? `0${millis}` : `${millis}`;
   return `${min}:${secStr}.${msStr}`;
+}
+
+function formatCountdownDisplay(ms: number): string {
+  const clamped = Math.max(ms, 0);
+  const sec = Math.floor(clamped / 1000);
+  const millis = Math.floor((clamped % 1000) / 10);
+  const secStr = sec < 10 ? `0${sec}` : `${sec}`;
+  const msStr = millis < 10 ? `0${millis}` : `${millis}`;
+  return `${secStr}.${msStr}`;
 }

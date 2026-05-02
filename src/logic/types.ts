@@ -1,5 +1,5 @@
 export type MinoType = "i" | "o" | "j" | "l" | "s" | "z" | "t";
-export type GameMode = "infinite" | "timeAttack";
+export type GameMode = "infinite" | "timeAttack" | "timeSurvival";
 export type GameStatus = "idle" | "playing" | "gameover";
 export type AnimationPhase = "placing" | "clearing";
 
@@ -37,6 +37,7 @@ export const BOARD_COLS = 10;
 export const PLAY_AREA_START = 3;
 export const PLAY_AREA_END = 6;
 export const TA_TARGET_REN = 25;
+export const TS_INITIAL_TIME_MS = 30_000;
 
 /** デザイン基準上の 1 セルのサイズ (px)。Board / MinoPreview のサイズ算出に利用。 */
 export const CELL_SIZE_PX = 28;

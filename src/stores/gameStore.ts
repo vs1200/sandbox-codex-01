@@ -18,6 +18,7 @@ import {
   FALL_STEP_MS,
   PLACE_HOLD_MS,
   TA_TARGET_REN,
+  TS_INITIAL_TIME_MS,
 } from "../logic/types";
 
 interface GameState {
@@ -42,6 +43,7 @@ interface GameState {
   startTime: number | null;
   elapsedTime: number;
   timeResult: string;
+  timeLeftMs: number;
 
   // アクション
   startGame: (mode: GameMode) => void;
@@ -83,6 +85,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   startTime: null,
   elapsedTime: 0,
   timeResult: "",
+  timeLeftMs: TS_INITIAL_TIME_MS,
 
   startGame: (mode: GameMode) => {
     const queue = [...generateBag(), ...generateBag()];
@@ -110,9 +113,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       nextChoices,
       holdChoices,
       animation: null,
-      startTime: mode === "timeAttack" ? Date.now() : null,
+      startTime:
+        mode === "timeAttack" || mode === "timeSurvival" ? Date.now() : null,
       elapsedTime: 0,
       timeResult: "",
+      timeLeftMs: TS_INITIAL_TIME_MS,
     });
   },
 
@@ -133,6 +138,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     const newQueue = refillQueue(state.minoQueue.slice(1));
 
     const newRen = state.ren + 1;
+    const bonusMs =
+      state.mode === "timeSurvival" ? (1 - newRen * 0.01) * 1000 : 0;
     const newNtj = Math.floor(nextTane / 10);
     const newNti = nextTane % 10;
 
@@ -168,6 +175,17 @@ export const useGameStore = create<GameState>((set, get) => ({
     let newGameStatus: GameStatus = "playing";
     let newTimeResult = state.timeResult;
     let newElapsed = state.elapsedTime;
+    let newTimeLeftMs = state.timeLeftMs;
+
+    if (state.mode === "timeSurvival" && state.startTime) {
+      const now = Date.now();
+      const consumed = now - state.startTime - state.elapsedTime;
+      newTimeLeftMs = Math.max(state.timeLeftMs - consumed + bonusMs, 0);
+      newElapsed = now - state.startTime;
+      if (newTimeLeftMs <= 0) {
+        newGameStatus = "gameover";
+      }
+    }
 
     if (reachedTarget || isGameOver) {
       newGameStatus = "gameover";
@@ -189,6 +207,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       gameStatus: newGameStatus,
       elapsedTime: newElapsed,
       timeResult: newTimeResult,
+      timeLeftMs: newTimeLeftMs,
       animation: {
         phase: "placing",
         prevTane,
@@ -279,9 +298,13 @@ export const useGameStore = create<GameState>((set, get) => ({
       nextChoices,
       holdChoices,
       animation: null,
-      startTime: state.mode === "timeAttack" ? Date.now() : null,
+      startTime:
+        state.mode === "timeAttack" || state.mode === "timeSurvival"
+          ? Date.now()
+          : null,
       elapsedTime: 0,
       timeResult: "",
+      timeLeftMs: TS_INITIAL_TIME_MS,
     });
   },
 
@@ -302,13 +325,29 @@ export const useGameStore = create<GameState>((set, get) => ({
       startTime: null,
       elapsedTime: 0,
       timeResult: "",
+      timeLeftMs: TS_INITIAL_TIME_MS,
     });
   },
 
   updateTimer: () => {
     const state = get();
-    if (state.startTime && state.gameStatus === "playing") {
-      set({ elapsedTime: Date.now() - state.startTime });
+    if (!state.startTime || state.gameStatus !== "playing") return;
+
+    const now = Date.now();
+    const elapsed = now - state.startTime;
+
+    if (state.mode === "timeAttack") {
+      set({ elapsedTime: elapsed });
+      return;
+    }
+
+    if (state.mode === "timeSurvival") {
+      const delta = elapsed - state.elapsedTime;
+      const timeLeftMs = Math.max(state.timeLeftMs - delta, 0);
+      set({ elapsedTime: elapsed, timeLeftMs });
+      if (timeLeftMs <= 0) {
+        set({ gameStatus: "gameover" });
+      }
     }
   },
 
