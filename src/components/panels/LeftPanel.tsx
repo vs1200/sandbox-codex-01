@@ -9,6 +9,7 @@ export function LeftPanel() {
   const mode = useGameStore((s) => s.mode);
   const elapsedTime = useGameStore((s) => s.elapsedTime);
   const timeLeftMs = useGameStore((s) => s.timeLeftMs);
+  const bonusEffectMs = useGameStore((s) => s.bonusEffectMs);
   const startTime = useGameStore((s) => s.startTime);
   const gameStatus = useGameStore((s) => s.gameStatus);
   const updateTimer = useGameStore((s) => s.updateTimer);
@@ -43,25 +44,38 @@ export function LeftPanel() {
         )}
       </div>
 
-      {/* REN Counter */}
-      {ren > 0 && (
-        <div className="bg-bg-secondary border border-accent rounded-lg p-3 text-center">
-          <p className="text-2xl font-bold text-accent">{ren}</p>
-          <p className="text-xs text-text-dim">REN</p>
-        </div>
-      )}
+      <div className="mt-auto flex flex-col gap-3">
+        {/* REN Counter */}
+        {ren > 0 && (
+          <div className="bg-bg-secondary border border-accent rounded-lg p-3 text-center">
+            <p className="text-2xl font-bold text-accent">{ren}</p>
+            <p className="text-xs text-text-dim">REN</p>
+          </div>
+        )}
 
-      {/* Timer */}
-      {(mode === "timeAttack" || mode === "timeSurvival") && (
-        <div className="bg-bg-secondary border border-border rounded-lg p-3 text-center">
-          <p className="text-xs text-text-dim mb-1">TIME</p>
-          <p className="text-sm font-mono font-bold">
-            {mode === "timeAttack"
-              ? formatTimeDisplay(elapsedTime)
-              : formatCountdownDisplay(timeLeftMs)}
-          </p>
-        </div>
-      )}
+        {/* Timer */}
+        {(mode === "timeAttack" || mode === "timeSurvival") && (
+          <div className="relative bg-bg-secondary border border-border rounded-lg p-3 text-center">
+            {mode === "timeSurvival" && bonusEffectMs > 0 && (
+              <p className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-bold text-accent animate-bonus-time pointer-events-none">
+                +{(bonusEffectMs / 1000).toFixed(2)}s
+              </p>
+            )}
+            <p className="text-xs text-text-dim mb-1">TIME</p>
+            <p
+              className={`text-sm font-mono font-bold ${
+                mode === "timeSurvival" && timeLeftMs <= 3000
+                  ? "text-red-400"
+                  : ""
+              }`}
+            >
+              {mode === "timeAttack"
+                ? formatTimeDisplay(elapsedTime)
+                : formatCountdownDisplay(timeLeftMs)}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
