@@ -89,7 +89,7 @@ export function ChoicePanel() {
           ))}
 
         {/* HOLD / Shuffle ボタン (区切り) */}
-        {(!holdActivated || ren === -1) && (
+        {(!holdActivated || ren === 0) && (
           <div className="shrink-0 w-px bg-border/60 self-stretch" />
         )}
         {!holdActivated && (
@@ -107,7 +107,7 @@ export function ChoicePanel() {
             HOLD
           </button>
         )}
-        {ren === -1 && (
+        {ren === 0 && (
           <button
             type="button"
             onClick={shuffle}
