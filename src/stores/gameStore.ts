@@ -79,7 +79,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   tane: 0,
   ntj: 0,
   nti: 0,
-  ren: -1,
+  ren: 0,
   nextChoices: [],
   holdChoices: [],
   animation: null,
@@ -111,7 +111,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       tane,
       ntj,
       nti,
-      ren: -1,
+      ren: 0,
       nextChoices,
       holdChoices,
       animation: null,
@@ -282,7 +282,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   shuffle: () => {
     const state = get();
-    if (state.ren > -1) return; // シャッフルは開始直後のみ
+    if (state.ren > 0) return; // シャッフルは開始直後のみ
 
     const queue = [...generateBag(), ...generateBag()];
     const tane = getRandomInitialTane();
@@ -303,7 +303,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       tane,
       ntj,
       nti,
-      ren: -1,
+      ren: 0,
       nextChoices,
       holdChoices,
       animation: null,
@@ -328,7 +328,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       tane: 0,
       ntj: 0,
       nti: 0,
-      ren: -1,
+      ren: 0,
       nextChoices: [],
       holdChoices: [],
       animation: null,
