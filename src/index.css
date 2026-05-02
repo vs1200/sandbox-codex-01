@@ -69,3 +69,21 @@ body {
 .animate-clear {
   animation: flash-out 180ms ease-in forwards;
 }
+
+@keyframes bonus-time-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 4px) scale(0.92);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -8px) scale(1);
+  }
+}
+
+.animate-bonus-time {
+  animation: bonus-time-pop 650ms ease-out forwards;
+}

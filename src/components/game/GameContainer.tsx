@@ -35,7 +35,7 @@ export function GameContainer() {
             transform: `scale(${scale})`,
             transformOrigin: "center center",
           }}
-          className="flex items-start gap-4 shrink-0"
+          className="flex items-stretch gap-4 shrink-0"
         >
           <LeftPanel />
           <BoardGrid />

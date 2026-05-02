@@ -44,6 +44,7 @@ interface GameState {
   elapsedTime: number;
   timeResult: string;
   timeLeftMs: number;
+  bonusEffectMs: number;
 
   // アクション
   startGame: (mode: GameMode) => void;
@@ -86,6 +87,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   elapsedTime: 0,
   timeResult: "",
   timeLeftMs: TS_INITIAL_TIME_MS,
+  bonusEffectMs: 0,
 
   startGame: (mode: GameMode) => {
     const queue = [...generateBag(), ...generateBag()];
@@ -118,6 +120,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       elapsedTime: 0,
       timeResult: "",
       timeLeftMs: TS_INITIAL_TIME_MS,
+      bonusEffectMs: 0,
     });
   },
 
@@ -208,6 +211,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       elapsedTime: newElapsed,
       timeResult: newTimeResult,
       timeLeftMs: newTimeLeftMs,
+      bonusEffectMs: bonusMs,
       animation: {
         phase: "placing",
         prevTane,
@@ -216,6 +220,11 @@ export const useGameStore = create<GameState>((set, get) => ({
         frames,
       },
     });
+    if (bonusMs > 0) {
+      setTimeout(() => {
+        if (get().bonusEffectMs === bonusMs) set({ bonusEffectMs: 0 });
+      }, 650);
+    }
 
     // アニメーションフェーズ遷移
     // 落下ステップ数 + 着地保持時間後に clearing、その後に animation をクリア
@@ -305,6 +314,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       elapsedTime: 0,
       timeResult: "",
       timeLeftMs: TS_INITIAL_TIME_MS,
+      bonusEffectMs: 0,
     });
   },
 
@@ -326,6 +336,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       elapsedTime: 0,
       timeResult: "",
       timeLeftMs: TS_INITIAL_TIME_MS,
+      bonusEffectMs: 0,
     });
   },
 
