@@ -139,7 +139,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const newRen = state.ren + 1;
     const bonusMs =
-      state.mode === "timeSurvival" ? (1 - newRen * 0.01) * 1000 : 0;
+      state.mode === "timeSurvival" ? (1 / (1 + newRen / 40)) * 1000 : 0;
     const newNtj = Math.floor(nextTane / 10);
     const newNti = nextTane % 10;
 
