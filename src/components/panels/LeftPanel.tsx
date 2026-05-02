@@ -33,7 +33,7 @@ export function LeftPanel() {
   }, [mode, startTime, gameStatus, updateTimer]);
 
   return (
-    <div className="flex flex-col gap-3 min-w-[80px]">
+    <div className="flex h-full flex-col gap-3 min-w-[80px]">
       {/* HOLD */}
       <div className="bg-bg-secondary border border-border rounded-lg p-3">
         <p className="text-xs text-text-dim mb-2 font-bold">HOLD</p>
