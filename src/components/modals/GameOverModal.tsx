@@ -6,6 +6,8 @@ export function GameOverModal() {
   const timeResult = useGameStore((s) => s.timeResult);
   const resetGame = useGameStore((s) => s.resetGame);
   const startGame = useGameStore((s) => s.startGame);
+  const openRankingPage = useGameStore((s) => s.openRankingPage);
+  const latestRankingInfo = useGameStore((s) => s.latestRankingInfo);
 
   return (
     <div className="fixed inset-0 pointer-events-none flex items-center justify-center z-50">
@@ -27,7 +29,18 @@ export function GameOverModal() {
           </>
         )}
 
-        <div className="flex gap-3 justify-center">
+        {latestRankingInfo?.isHighScore && (
+          <p className="text-sm font-bold text-yellow-300 mb-1">
+            🏆 ハイスコア更新！
+          </p>
+        )}
+        {latestRankingInfo?.rank && (
+          <p className="text-xs text-text-dim mb-6">
+            今回の順位: #{latestRankingInfo.rank}
+          </p>
+        )}
+
+        <div className="flex gap-3 justify-center flex-wrap">
           <button
             type="button"
             onClick={() => {
@@ -38,6 +51,17 @@ export function GameOverModal() {
 							hover:bg-accent-hover transition-colors cursor-pointer"
           >
             もう一度
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              resetGame();
+              openRankingPage();
+            }}
+            className="px-6 py-3 bg-bg-secondary border border-border rounded-lg font-bold
+							hover:border-accent transition-colors cursor-pointer"
+          >
+            ランキング
           </button>
           <button
             type="button"

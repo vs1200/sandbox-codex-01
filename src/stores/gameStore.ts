@@ -22,6 +22,7 @@ import {
 } from "../logic/types";
 
 interface GameState {
+  currentPage: "title" | "ranking";
   gameStatus: GameStatus;
   mode: GameMode;
 
@@ -45,6 +46,8 @@ interface GameState {
   timeResult: string;
   timeLeftMs: number;
   bonusEffectMs: number;
+  latestRankingInfo: { isHighScore: boolean; rank: number | null } | null;
+  rankings: Record<GameMode, RankingEntry[]>;
 
   // アクション
   startGame: (mode: GameMode) => void;
@@ -54,6 +57,47 @@ interface GameState {
   resetGame: () => void;
   updateTimer: () => void;
   clearAnimation: () => void;
+  openRankingPage: () => void;
+  backToTitle: () => void;
+}
+
+interface RankingEntry {
+  value: number;
+  achievedAt: string;
+}
+
+const RANKING_KEY = "tetris-ren-ren-rankings";
+const MAX_RANKING_ITEMS = 10;
+
+function loadRankings(): Record<GameMode, RankingEntry[]> {
+  try {
+    const raw = localStorage.getItem(RANKING_KEY);
+    if (!raw) return { infinite: [], timeAttack: [], timeSurvival: [] };
+    const parsed = JSON.parse(raw) as Record<GameMode, RankingEntry[]>;
+    return {
+      infinite: Array.isArray(parsed.infinite) ? parsed.infinite : [],
+      timeAttack: Array.isArray(parsed.timeAttack) ? parsed.timeAttack : [],
+      timeSurvival: Array.isArray(parsed.timeSurvival)
+        ? parsed.timeSurvival
+        : [],
+    };
+  } catch {
+    return { infinite: [], timeAttack: [], timeSurvival: [] };
+  }
+}
+
+function saveRankings(rankings: Record<GameMode, RankingEntry[]>) {
+  localStorage.setItem(RANKING_KEY, JSON.stringify(rankings));
+}
+
+function isBetterScore(mode: GameMode, a: number, b: number): boolean {
+  return mode === "timeAttack" ? a < b : a > b;
+}
+
+function sortRankings(mode: GameMode, entries: RankingEntry[]): RankingEntry[] {
+  return [...entries].sort((a, b) =>
+    mode === "timeAttack" ? a.value - b.value : b.value - a.value,
+  );
 }
 
 function computeChoices(
@@ -71,6 +115,7 @@ function computeChoices(
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
+  currentPage: "title",
   gameStatus: "idle",
   mode: "infinite",
   minoQueue: [],
@@ -88,6 +133,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   timeResult: "",
   timeLeftMs: TS_INITIAL_TIME_MS,
   bonusEffectMs: 0,
+  latestRankingInfo: null,
+  rankings: loadRankings(),
 
   startGame: (mode: GameMode) => {
     const queue = [...generateBag(), ...generateBag()];
@@ -121,6 +168,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       timeResult: "",
       timeLeftMs: TS_INITIAL_TIME_MS,
       bonusEffectMs: 0,
+      latestRankingInfo: null,
+      currentPage: "title",
     });
   },
 
@@ -198,6 +247,38 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
     }
 
+    let latestRankingInfo: {
+      isHighScore: boolean;
+      rank: number | null;
+    } | null = state.latestRankingInfo;
+    let updatedRankings = state.rankings;
+    if (newGameStatus === "gameover") {
+      const scoreValue =
+        state.mode === "timeAttack"
+          ? reachedTarget
+            ? newElapsed
+            : null
+          : newRen;
+      if (scoreValue !== null) {
+        const current = state.rankings[state.mode];
+        const merged = sortRankings(state.mode, [
+          ...current,
+          { value: scoreValue, achievedAt: new Date().toISOString() },
+        ]).slice(0, MAX_RANKING_ITEMS);
+        updatedRankings = { ...state.rankings, [state.mode]: merged };
+        saveRankings(updatedRankings);
+        const rank =
+          merged.findIndex((entry) => entry.value === scoreValue) + 1;
+        const prevBest = current[0]?.value;
+        latestRankingInfo = {
+          isHighScore:
+            prevBest === undefined ||
+            isBetterScore(state.mode, scoreValue, prevBest),
+          rank: rank > 0 ? rank : null,
+        };
+      }
+    }
+
     set({
       minoQueue: newQueue,
       holdMino: newHoldMino,
@@ -212,6 +293,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       timeResult: newTimeResult,
       timeLeftMs: newTimeLeftMs,
       bonusEffectMs: bonusMs,
+      rankings: updatedRankings,
+      latestRankingInfo,
       animation: {
         phase: "placing",
         prevTane,
@@ -364,6 +447,14 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   clearAnimation: () => {
     set({ animation: null });
+  },
+
+  openRankingPage: () => {
+    set({ currentPage: "ranking", gameStatus: "idle" });
+  },
+
+  backToTitle: () => {
+    set({ currentPage: "title", gameStatus: "idle", latestRankingInfo: null });
   },
 }));
 
