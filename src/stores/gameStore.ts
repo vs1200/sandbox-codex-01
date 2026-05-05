@@ -114,6 +114,72 @@ function computeChoices(
   return { nextChoices, holdChoices };
 }
 
+interface TimerUpdateResult {
+  gameStatus: GameStatus;
+  elapsedTime: number;
+  timeLeftMs: number;
+}
+
+function computeSurvivalBonusMs(mode: GameMode, ren: number): number {
+  return mode === "timeSurvival" ? (1 / (1 + ren / 40)) * 1000 : 0;
+}
+
+function computeSurvivalTimerUpdate(
+  state: Pick<GameState, "mode" | "startTime" | "elapsedTime" | "timeLeftMs">,
+  bonusMs: number,
+): TimerUpdateResult {
+  if (state.mode !== "timeSurvival" || !state.startTime) {
+    return {
+      gameStatus: "playing",
+      elapsedTime: state.elapsedTime,
+      timeLeftMs: state.timeLeftMs,
+    };
+  }
+
+  const now = Date.now();
+  const consumed = now - state.startTime - state.elapsedTime;
+  const timeLeftMs = Math.max(state.timeLeftMs - consumed + bonusMs, 0);
+  const elapsedTime = now - state.startTime;
+
+  return {
+    gameStatus: timeLeftMs <= 0 ? "gameover" : "playing",
+    elapsedTime,
+    timeLeftMs,
+  };
+}
+
+function persistRankingIfNeeded(
+  state: Pick<GameState, "mode" | "rankings">,
+  scoreValue: number | null,
+): {
+  rankings: Record<GameMode, RankingEntry[]>;
+  latestRankingInfo: { isHighScore: boolean; rank: number | null } | null;
+} {
+  if (scoreValue === null) {
+    return { rankings: state.rankings, latestRankingInfo: null };
+  }
+
+  const current = state.rankings[state.mode];
+  const merged = sortRankings(state.mode, [
+    ...current,
+    { value: scoreValue, achievedAt: new Date().toISOString() },
+  ]).slice(0, MAX_RANKING_ITEMS);
+  const rankings = { ...state.rankings, [state.mode]: merged };
+  saveRankings(rankings);
+
+  const rank = merged.findIndex((entry) => entry.value === scoreValue) + 1;
+  const prevBest = current[0]?.value;
+
+  return {
+    rankings,
+    latestRankingInfo: {
+      isHighScore:
+        prevBest === undefined ||
+        isBetterScore(state.mode, scoreValue, prevBest),
+      rank: rank > 0 ? rank : null,
+    },
+  };
+}
 export const useGameStore = create<GameState>((set, get) => ({
   currentPage: "title",
   gameStatus: "idle",
@@ -190,8 +256,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const newQueue = refillQueue(state.minoQueue.slice(1));
 
     const newRen = state.ren + 1;
-    const bonusMs =
-      state.mode === "timeSurvival" ? (1 / (1 + newRen / 40)) * 1000 : 0;
+    const bonusMs = computeSurvivalBonusMs(state.mode, newRen);
     const newNtj = Math.floor(nextTane / 10);
     const newNti = nextTane % 10;
 
@@ -226,18 +291,10 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     let newGameStatus: GameStatus = "playing";
     let newTimeResult = state.timeResult;
-    let newElapsed = state.elapsedTime;
-    let newTimeLeftMs = state.timeLeftMs;
-
-    if (state.mode === "timeSurvival" && state.startTime) {
-      const now = Date.now();
-      const consumed = now - state.startTime - state.elapsedTime;
-      newTimeLeftMs = Math.max(state.timeLeftMs - consumed + bonusMs, 0);
-      newElapsed = now - state.startTime;
-      if (newTimeLeftMs <= 0) {
-        newGameStatus = "gameover";
-      }
-    }
+    const timerUpdate = computeSurvivalTimerUpdate(state, bonusMs);
+    let newElapsed = timerUpdate.elapsedTime;
+    const newTimeLeftMs = timerUpdate.timeLeftMs;
+    newGameStatus = timerUpdate.gameStatus;
 
     if (reachedTarget || isGameOver) {
       newGameStatus = "gameover";
@@ -259,23 +316,10 @@ export const useGameStore = create<GameState>((set, get) => ({
             ? newElapsed
             : null
           : newRen;
-      if (scoreValue !== null) {
-        const current = state.rankings[state.mode];
-        const merged = sortRankings(state.mode, [
-          ...current,
-          { value: scoreValue, achievedAt: new Date().toISOString() },
-        ]).slice(0, MAX_RANKING_ITEMS);
-        updatedRankings = { ...state.rankings, [state.mode]: merged };
-        saveRankings(updatedRankings);
-        const rank =
-          merged.findIndex((entry) => entry.value === scoreValue) + 1;
-        const prevBest = current[0]?.value;
-        latestRankingInfo = {
-          isHighScore:
-            prevBest === undefined ||
-            isBetterScore(state.mode, scoreValue, prevBest),
-          rank: rank > 0 ? rank : null,
-        };
+      const rankingResult = persistRankingIfNeeded(state, scoreValue);
+      updatedRankings = rankingResult.rankings;
+      if (rankingResult.latestRankingInfo) {
+        latestRankingInfo = rankingResult.latestRankingInfo;
       }
     }
 
