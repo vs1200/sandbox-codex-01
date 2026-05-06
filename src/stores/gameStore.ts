@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { searchChoices } from "../data/choiceDatabase";
 import { generateBag, refillQueue } from "../logic/bag";
+import { getGuideRecommendation } from "../logic/guide";
 import {
   computeFallFrames,
   computePlacedMinoCells,
@@ -47,7 +48,7 @@ interface GameState {
   timeLeftMs: number;
   bonusEffectMs: number;
   latestRankingInfo: { isHighScore: boolean; rank: number | null } | null;
-  rankings: Record<GameMode, RankingEntry[]>;
+  rankings: Record<RankingMode, RankingEntry[]>;
 
   // アクション
   startGame: (mode: GameMode) => void;
@@ -61,6 +62,8 @@ interface GameState {
   backToTitle: () => void;
 }
 
+type RankingMode = Exclude<GameMode, "guide">;
+
 interface RankingEntry {
   value: number;
   achievedAt: string;
@@ -69,11 +72,11 @@ interface RankingEntry {
 const RANKING_KEY = "tetris-ren-ren-rankings";
 const MAX_RANKING_ITEMS = 10;
 
-function loadRankings(): Record<GameMode, RankingEntry[]> {
+function loadRankings(): Record<RankingMode, RankingEntry[]> {
   try {
     const raw = localStorage.getItem(RANKING_KEY);
     if (!raw) return { infinite: [], timeAttack: [], timeSurvival: [] };
-    const parsed = JSON.parse(raw) as Record<GameMode, RankingEntry[]>;
+    const parsed = JSON.parse(raw) as Record<RankingMode, RankingEntry[]>;
     return {
       infinite: Array.isArray(parsed.infinite) ? parsed.infinite : [],
       timeAttack: Array.isArray(parsed.timeAttack) ? parsed.timeAttack : [],
@@ -86,15 +89,18 @@ function loadRankings(): Record<GameMode, RankingEntry[]> {
   }
 }
 
-function saveRankings(rankings: Record<GameMode, RankingEntry[]>) {
+function saveRankings(rankings: Record<RankingMode, RankingEntry[]>) {
   localStorage.setItem(RANKING_KEY, JSON.stringify(rankings));
 }
 
-function isBetterScore(mode: GameMode, a: number, b: number): boolean {
+function isBetterScore(mode: RankingMode, a: number, b: number): boolean {
   return mode === "timeAttack" ? a < b : a > b;
 }
 
-function sortRankings(mode: GameMode, entries: RankingEntry[]): RankingEntry[] {
+function sortRankings(
+  mode: RankingMode,
+  entries: RankingEntry[],
+): RankingEntry[] {
   return [...entries].sort((a, b) =>
     mode === "timeAttack" ? a.value - b.value : b.value - a.value,
   );
@@ -152,19 +158,23 @@ function persistRankingIfNeeded(
   state: Pick<GameState, "mode" | "rankings">,
   scoreValue: number | null,
 ): {
-  rankings: Record<GameMode, RankingEntry[]>;
+  rankings: Record<RankingMode, RankingEntry[]>;
   latestRankingInfo: { isHighScore: boolean; rank: number | null } | null;
 } {
   if (scoreValue === null) {
     return { rankings: state.rankings, latestRankingInfo: null };
   }
 
-  const current = state.rankings[state.mode];
-  const merged = sortRankings(state.mode, [
+  if (state.mode === "guide") {
+    return { rankings: state.rankings, latestRankingInfo: null };
+  }
+  const mode = state.mode as RankingMode;
+  const current = state.rankings[mode];
+  const merged = sortRankings(mode, [
     ...current,
     { value: scoreValue, achievedAt: new Date().toISOString() },
   ]).slice(0, MAX_RANKING_ITEMS);
-  const rankings = { ...state.rankings, [state.mode]: merged };
+  const rankings = { ...state.rankings, [mode]: merged };
   saveRankings(rankings);
 
   const rank = merged.findIndex((entry) => entry.value === scoreValue) + 1;
@@ -174,8 +184,7 @@ function persistRankingIfNeeded(
     rankings,
     latestRankingInfo: {
       isHighScore:
-        prevBest === undefined ||
-        isBetterScore(state.mode, scoreValue, prevBest),
+        prevBest === undefined || isBetterScore(mode, scoreValue, prevBest),
       rank: rank > 0 ? rank : null,
     },
   };
@@ -276,6 +285,18 @@ export const useGameStore = create<GameState>((set, get) => ({
       newNextChoices.length === 0 &&
       newHoldChoices.length === 0;
 
+    const guideAction =
+      state.mode === "guide"
+        ? getGuideRecommendation({
+            queue: newQueue,
+            holdMino: newHoldMino,
+            holdActivated: state.holdActivated,
+            tane: nextTane,
+          })
+        : null;
+    const isGuideContinuable =
+      state.mode === "guide" ? guideAction !== null : false;
+
     // アニメーションのセットアップ
     const placedMino = isHoldChoice
       ? (state.holdMino as MinoType)
@@ -296,7 +317,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const newTimeLeftMs = timerUpdate.timeLeftMs;
     newGameStatus = timerUpdate.gameStatus;
 
-    if (reachedTarget || isGameOver) {
+    if (reachedTarget || (isGameOver && !isGuideContinuable)) {
       newGameStatus = "gameover";
       if (reachedTarget && state.startTime) {
         newElapsed = Date.now() - state.startTime;

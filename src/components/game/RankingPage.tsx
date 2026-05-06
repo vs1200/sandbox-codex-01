@@ -1,7 +1,9 @@
 import type { GameMode } from "../../logic/types";
+
+type RankingMode = Exclude<GameMode, "guide">;
 import { useGameStore } from "../../stores/gameStore";
 
-const modeLabels: Record<GameMode, string> = {
+const modeLabels: Record<RankingMode, string> = {
   infinite: "無限モード",
   timeAttack: "TAモード",
   timeSurvival: "持ち時間モード",
@@ -26,7 +28,7 @@ export function RankingPage() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-4">
-          {(Object.keys(modeLabels) as GameMode[]).map((mode) => (
+          {(Object.keys(modeLabels) as RankingMode[]).map((mode) => (
             <section
               key={mode}
               className="bg-bg-secondary border border-border rounded-lg p-4"

@@ -36,6 +36,14 @@ export function ModeSelector() {
         >
           持ち時間モード
         </button>
+        <button
+          type="button"
+          onClick={() => handleStart("guide")}
+          className="px-8 py-4 bg-bg-secondary text-text border border-border rounded-lg text-lg font-bold
+						hover:border-accent transition-colors cursor-pointer"
+        >
+          ガイドモード
+        </button>
       </div>
       <p className="text-text-dim text-sm max-w-md text-center">
         無限モード: できるだけ長くRENを繋ぎ続けましょう
@@ -43,6 +51,8 @@ export function ModeSelector() {
         TAモード: 25 REN をできるだけ早く達成しましょう
         <br />
         持ち時間モード: 10秒から始まり、タイムアップまでの最大RENを競います
+        <br />
+        ガイドモード: ゲームオーバー回避のおすすめ配置を提案します
       </p>
     </div>
   );
