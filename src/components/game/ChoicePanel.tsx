@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { getGuideRecommendation } from "../../logic/guide";
 import { computePlacedMinoCellsForChoices } from "../../logic/placement";
 import type { MinoType } from "../../logic/types";
 import { useGameStore } from "../../stores/gameStore";
@@ -16,11 +17,22 @@ export function ChoicePanel() {
   const holdChoices = useGameStore((s) => s.holdChoices);
   const ren = useGameStore((s) => s.ren);
   const gameStatus = useGameStore((s) => s.gameStatus);
+  const mode = useGameStore((s) => s.mode);
   const selectChoice = useGameStore((s) => s.selectChoice);
   const activateHold = useGameStore((s) => s.activateHold);
   const shuffle = useGameStore((s) => s.shuffle);
 
   const currentMino = minoQueue[0];
+
+  const guideRecommendation = useMemo(() => {
+    if (mode !== "guide") return null;
+    return getGuideRecommendation({
+      queue: minoQueue,
+      holdMino,
+      holdActivated,
+      tane,
+    });
+  }, [mode, minoQueue, holdMino, holdActivated, tane]);
 
   const nextPlacements = useMemo(
     () => computePlacedMinoCellsForChoices(currentMino, tane, nextChoices),
@@ -44,51 +56,76 @@ export function ChoicePanel() {
     <div className="bg-bg-secondary border border-border rounded-lg p-4 w-full max-w-xl">
       <p className="text-xs text-text-dim mb-2 font-bold">配置候補</p>
       <div className="flex flex-nowrap gap-2 overflow-x-auto items-stretch">
-        {/* 現在ミノの配置候補 */}
-        {nextChoices.map((nextTane) => (
-          <button
-            type="button"
-            key={`choice-${nextTane}`}
-            onClick={() => selectChoice(nextTane, false)}
-            className="p-2 bg-bg-board border border-border rounded-lg
-							hover:border-accent transition-colors cursor-pointer shrink-0"
-            title={`${currentMino} → ${nextTane}`}
-          >
-            <ChoicePreview
-              mino={currentMino}
-              currentTane={tane}
-              nextTane={nextTane}
-              size={CHOICE_PREVIEW_CELL_SIZE}
-              placedCellsOverride={nextPlacements.get(nextTane)}
-            />
-          </button>
-        ))}
+        {nextChoices.map((nextTane) => {
+          const isRecommended =
+            mode === "guide" &&
+            guideRecommendation !== null &&
+            guideRecommendation !== "activateHold" &&
+            !guideRecommendation.isHoldChoice &&
+            guideRecommendation.nextTane === nextTane;
+          return (
+            <button
+              type="button"
+              key={`choice-${nextTane}`}
+              onClick={() => selectChoice(nextTane, false)}
+              className={`p-2 bg-bg-board border rounded-lg hover:border-accent transition-colors cursor-pointer shrink-0 ${
+                isRecommended ? "border-emerald-400" : "border-border"
+              }`}
+              title={`${currentMino} → ${nextTane}`}
+            >
+              {isRecommended && (
+                <p className="text-[10px] text-emerald-300 mb-1 font-bold">
+                  おすすめ
+                </p>
+              )}
+              <ChoicePreview
+                mino={currentMino}
+                currentTane={tane}
+                nextTane={nextTane}
+                size={CHOICE_PREVIEW_CELL_SIZE}
+                placedCellsOverride={nextPlacements.get(nextTane)}
+              />
+            </button>
+          );
+        })}
 
-        {/* HOLDミノの配置候補 (区切り) */}
         {holdActivated && holdChoices.length > 0 && (
           <div className="shrink-0 w-px bg-border/60 self-stretch" />
         )}
         {holdActivated &&
-          holdChoices.map((nextTane) => (
-            <button
-              type="button"
-              key={`hold-${nextTane}`}
-              onClick={() => selectChoice(nextTane, true)}
-              className="p-2 bg-bg-board border border-accent/40 rounded-lg
-								hover:border-accent transition-colors cursor-pointer shrink-0"
-              title={`HOLD: ${holdMino} → ${nextTane}`}
-            >
-              <ChoicePreview
-                mino={holdMino as MinoType}
-                currentTane={tane}
-                nextTane={nextTane}
-                size={CHOICE_PREVIEW_CELL_SIZE}
-                placedCellsOverride={holdPlacements.get(nextTane)}
-              />
-            </button>
-          ))}
+          holdChoices.map((nextTane) => {
+            const isRecommended =
+              mode === "guide" &&
+              guideRecommendation !== null &&
+              guideRecommendation !== "activateHold" &&
+              guideRecommendation.isHoldChoice &&
+              guideRecommendation.nextTane === nextTane;
+            return (
+              <button
+                type="button"
+                key={`hold-${nextTane}`}
+                onClick={() => selectChoice(nextTane, true)}
+                className={`p-2 bg-bg-board border rounded-lg hover:border-accent transition-colors cursor-pointer shrink-0 ${
+                  isRecommended ? "border-emerald-400" : "border-accent/40"
+                }`}
+                title={`HOLD: ${holdMino} → ${nextTane}`}
+              >
+                {isRecommended && (
+                  <p className="text-[10px] text-emerald-300 mb-1 font-bold">
+                    おすすめ
+                  </p>
+                )}
+                <ChoicePreview
+                  mino={holdMino as MinoType}
+                  currentTane={tane}
+                  nextTane={nextTane}
+                  size={CHOICE_PREVIEW_CELL_SIZE}
+                  placedCellsOverride={holdPlacements.get(nextTane)}
+                />
+              </button>
+            );
+          })}
 
-        {/* HOLD / Shuffle ボタン (区切り) */}
         {(!holdActivated || ren === 0) && (
           <div className="shrink-0 w-px bg-border/60 self-stretch" />
         )}
@@ -96,9 +133,11 @@ export function ChoicePanel() {
           <button
             type="button"
             onClick={activateHold}
-            className="p-2 bg-bg-board border border-border rounded-lg
-							hover:border-accent transition-colors cursor-pointer shrink-0
-							flex items-center justify-center text-xs font-bold"
+            className={`p-2 bg-bg-board border rounded-lg hover:border-accent transition-colors cursor-pointer shrink-0 flex items-center justify-center text-xs font-bold ${
+              mode === "guide" && guideRecommendation === "activateHold"
+                ? "border-emerald-400 text-emerald-300"
+                : "border-border"
+            }`}
             style={{
               width: `${CHOICE_BUTTON_SIZE}px`,
               height: `${CHOICE_BUTTON_SIZE}px`,
