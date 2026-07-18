@@ -1,7 +1,7 @@
 import type { GameMode } from "../../logic/types";
-
-type RankingMode = Exclude<GameMode, "guide">;
 import { useGameStore } from "../../stores/gameStore";
+
+type RankingMode = GameMode;
 
 const modeLabels: Record<RankingMode, string> = {
   infinite: "無限モード",

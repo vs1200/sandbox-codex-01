@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { searchChoices } from "../data/choiceDatabase";
 import { generateBag, refillQueue } from "../logic/bag";
-import { getGuideRecommendation } from "../logic/guide";
 import {
   computeFallFrames,
   computePlacedMinoCells,
@@ -26,6 +25,7 @@ interface GameState {
   currentPage: "title" | "ranking";
   gameStatus: GameStatus;
   mode: GameMode;
+  guideEnabled: boolean;
 
   minoQueue: MinoType[];
   holdMino: MinoType | null;
@@ -51,6 +51,7 @@ interface GameState {
   rankings: Record<RankingMode, RankingEntry[]>;
 
   // アクション
+  setGuideEnabled: (enabled: boolean) => void;
   startGame: (mode: GameMode) => void;
   selectChoice: (nextTane: number, isHoldChoice: boolean) => void;
   activateHold: () => void;
@@ -62,7 +63,7 @@ interface GameState {
   backToTitle: () => void;
 }
 
-type RankingMode = Exclude<GameMode, "guide">;
+type RankingMode = GameMode;
 
 interface RankingEntry {
   value: number;
@@ -155,20 +156,18 @@ function computeSurvivalTimerUpdate(
 }
 
 function persistRankingIfNeeded(
-  state: Pick<GameState, "mode" | "rankings">,
+  state: Pick<GameState, "mode" | "rankings" | "guideEnabled">,
   scoreValue: number | null,
 ): {
   rankings: Record<RankingMode, RankingEntry[]>;
   latestRankingInfo: { isHighScore: boolean; rank: number | null } | null;
 } {
-  if (scoreValue === null) {
+  // おすすめ表示は練習用機能のため、ランキングには集計しない
+  if (scoreValue === null || state.guideEnabled) {
     return { rankings: state.rankings, latestRankingInfo: null };
   }
 
-  if (state.mode === "guide") {
-    return { rankings: state.rankings, latestRankingInfo: null };
-  }
-  const mode = state.mode as RankingMode;
+  const mode = state.mode;
   const current = state.rankings[mode];
   const merged = sortRankings(mode, [
     ...current,
@@ -193,6 +192,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   currentPage: "title",
   gameStatus: "idle",
   mode: "infinite",
+  guideEnabled: false,
   minoQueue: [],
   holdMino: null,
   holdActivated: false,
@@ -210,6 +210,10 @@ export const useGameStore = create<GameState>((set, get) => ({
   bonusEffectMs: 0,
   latestRankingInfo: null,
   rankings: loadRankings(),
+
+  setGuideEnabled: (enabled: boolean) => {
+    set({ guideEnabled: enabled });
+  },
 
   startGame: (mode: GameMode) => {
     const queue = [...generateBag(), ...generateBag()];
@@ -285,18 +289,6 @@ export const useGameStore = create<GameState>((set, get) => ({
       newNextChoices.length === 0 &&
       newHoldChoices.length === 0;
 
-    const guideAction =
-      state.mode === "guide"
-        ? getGuideRecommendation({
-            queue: newQueue,
-            holdMino: newHoldMino,
-            holdActivated: state.holdActivated,
-            tane: nextTane,
-          })
-        : null;
-    const isGuideContinuable =
-      state.mode === "guide" ? guideAction !== null : false;
-
     // アニメーションのセットアップ
     const placedMino = isHoldChoice
       ? (state.holdMino as MinoType)
@@ -317,7 +309,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const newTimeLeftMs = timerUpdate.timeLeftMs;
     newGameStatus = timerUpdate.gameStatus;
 
-    if (reachedTarget || (isGameOver && !isGuideContinuable)) {
+    if (reachedTarget || isGameOver) {
       newGameStatus = "gameover";
       if (reachedTarget && state.startTime) {
         newElapsed = Date.now() - state.startTime;
