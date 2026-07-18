@@ -1,12 +1,13 @@
 import { create } from "zustand";
 import { searchChoices } from "../data/choiceDatabase";
-import { generateBag, refillQueue } from "../logic/bag";
+import { refillQueue } from "../logic/bag";
 import {
   computeFallFrames,
   computePlacedMinoCells,
   getInitialMinoCells,
 } from "../logic/placement";
-import { getRandomInitialTane, getTaneCells } from "../logic/tane";
+import { generateViableDeal } from "../logic/startValidation";
+import { getTaneCells } from "../logic/tane";
 import type {
   AnimationState,
   GameMode,
@@ -216,8 +217,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   startGame: (mode: GameMode) => {
-    const queue = [...generateBag(), ...generateBag()];
-    const tane = getRandomInitialTane();
+    const { queue, tane } = generateViableDeal();
     const ntj = Math.floor(tane / 10);
     const nti = tane % 10;
     const currentMino = queue[0];
@@ -424,8 +424,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const state = get();
     if (state.ren > 0) return; // シャッフルは開始直後のみ
 
-    const queue = [...generateBag(), ...generateBag()];
-    const tane = getRandomInitialTane();
+    const { queue, tane } = generateViableDeal();
     const ntj = Math.floor(tane / 10);
     const nti = tane % 10;
     const currentMino = queue[0];
