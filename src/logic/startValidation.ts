@@ -3,15 +3,6 @@ import { generateBag } from "./bag";
 import { getRandomInitialTane } from "./tane";
 import type { MinoType } from "./types";
 
-/**
- * 開始局面のデッドロック防止（仕様 3.10）。
- *
- * 初期タネ8種はいずれも「その盤面では配置候補が存在しないミノ」を持つため、
- * 「初期タネ + ミノキュー」の巡り合わせ次第で、プレイヤーがどの選択肢を
- * 選んでもゲームオーバーが確定する開始局面が発生しうる。
- * 開始局面を生成時に検査し、詰みが確定する局面は振り直す。
- */
-
 interface SurviveState {
   queue: MinoType[];
   hold: MinoType | null;
@@ -19,7 +10,6 @@ interface SurviveState {
   tane: number;
 }
 
-/** 開始局面の生成試行回数の上限（フォールバックまでの上限）。 */
 const MAX_ATTEMPTS = 100;
 
 function keyOf(state: SurviveState): string {
@@ -52,7 +42,6 @@ export function maxSurvivableDepth(
   const rest = state.queue.slice(1);
   let best = 0;
 
-  // 現在ミノを配置
   for (const nextTane of searchChoices(current, state.tane)) {
     best = Math.max(
       best,
@@ -69,7 +58,6 @@ export function maxSurvivableDepth(
     );
   }
 
-  // HOLDミノを配置（現在ミノと入れ替え）
   if (state.holdActivated && state.hold && state.hold !== current) {
     for (const nextTane of searchChoices(state.hold, state.tane)) {
       best = Math.max(
@@ -83,7 +71,6 @@ export function maxSurvivableDepth(
     }
   }
 
-  // HOLD有効化（初回のみ・タネ不変・キューは進む）
   if (!state.holdActivated) {
     best = Math.max(
       best,
@@ -141,6 +128,5 @@ export function generateViableDeal(): { queue: MinoType[]; tane: number } {
     }
   }
 
-  // フォールバック（実質的に到達不能）: 最良の局面を返す
   return best as { queue: MinoType[]; tane: number };
 }

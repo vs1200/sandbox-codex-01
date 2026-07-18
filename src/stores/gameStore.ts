@@ -217,7 +217,6 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   startGame: (mode: GameMode) => {
-    // 開始局面のデッドロック防止（仕様 3.10）: 可視キューを捌ける局面を生成
     const { queue, tane } = generateViableDeal();
     const ntj = Math.floor(tane / 10);
     const nti = tane % 10;
@@ -425,7 +424,6 @@ export const useGameStore = create<GameState>((set, get) => ({
     const state = get();
     if (state.ren > 0) return; // シャッフルは開始直後のみ
 
-    // 開始局面のデッドロック防止（仕様 3.10）: 可視キューを捌ける局面を生成
     const { queue, tane } = generateViableDeal();
     const ntj = Math.floor(tane / 10);
     const nti = tane % 10;
