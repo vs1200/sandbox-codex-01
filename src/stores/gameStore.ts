@@ -156,13 +156,14 @@ function computeSurvivalTimerUpdate(
 }
 
 function persistRankingIfNeeded(
-  state: Pick<GameState, "mode" | "rankings">,
+  state: Pick<GameState, "mode" | "rankings" | "guideEnabled">,
   scoreValue: number | null,
 ): {
   rankings: Record<RankingMode, RankingEntry[]>;
   latestRankingInfo: { isHighScore: boolean; rank: number | null } | null;
 } {
-  if (scoreValue === null) {
+  // おすすめ表示は練習用機能のため、ランキングには集計しない
+  if (scoreValue === null || state.guideEnabled) {
     return { rankings: state.rankings, latestRankingInfo: null };
   }
 
