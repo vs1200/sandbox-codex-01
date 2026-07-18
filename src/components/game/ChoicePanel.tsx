@@ -17,7 +17,7 @@ export function ChoicePanel() {
   const holdChoices = useGameStore((s) => s.holdChoices);
   const ren = useGameStore((s) => s.ren);
   const gameStatus = useGameStore((s) => s.gameStatus);
-  const mode = useGameStore((s) => s.mode);
+  const guideEnabled = useGameStore((s) => s.guideEnabled);
   const selectChoice = useGameStore((s) => s.selectChoice);
   const activateHold = useGameStore((s) => s.activateHold);
   const shuffle = useGameStore((s) => s.shuffle);
@@ -25,14 +25,14 @@ export function ChoicePanel() {
   const currentMino = minoQueue[0];
 
   const guideRecommendation = useMemo(() => {
-    if (mode !== "guide") return null;
+    if (!guideEnabled) return null;
     return getGuideRecommendation({
       queue: minoQueue,
       holdMino,
       holdActivated,
       tane,
     });
-  }, [mode, minoQueue, holdMino, holdActivated, tane]);
+  }, [guideEnabled, minoQueue, holdMino, holdActivated, tane]);
 
   const nextPlacements = useMemo(
     () => computePlacedMinoCellsForChoices(currentMino, tane, nextChoices),
@@ -58,7 +58,7 @@ export function ChoicePanel() {
       <div className="flex flex-nowrap gap-2 overflow-x-auto items-stretch">
         {nextChoices.map((nextTane) => {
           const isRecommended =
-            mode === "guide" &&
+            guideEnabled &&
             guideRecommendation !== null &&
             guideRecommendation !== "activateHold" &&
             !guideRecommendation.isHoldChoice &&
@@ -95,7 +95,7 @@ export function ChoicePanel() {
         {holdActivated &&
           holdChoices.map((nextTane) => {
             const isRecommended =
-              mode === "guide" &&
+              guideEnabled &&
               guideRecommendation !== null &&
               guideRecommendation !== "activateHold" &&
               guideRecommendation.isHoldChoice &&
@@ -134,7 +134,7 @@ export function ChoicePanel() {
             type="button"
             onClick={activateHold}
             className={`p-2 bg-bg-board border rounded-lg hover:border-accent transition-colors cursor-pointer shrink-0 flex items-center justify-center text-xs font-bold ${
-              mode === "guide" && guideRecommendation === "activateHold"
+              guideEnabled && guideRecommendation === "activateHold"
                 ? "border-emerald-400 text-emerald-300"
                 : "border-border"
             }`}

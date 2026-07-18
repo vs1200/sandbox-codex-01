@@ -1,5 +1,5 @@
 export type MinoType = "i" | "o" | "j" | "l" | "s" | "z" | "t";
-export type GameMode = "infinite" | "timeAttack" | "timeSurvival" | "guide";
+export type GameMode = "infinite" | "timeAttack" | "timeSurvival";
 export type GameStatus = "idle" | "playing" | "gameover";
 export type AnimationPhase = "placing" | "clearing";
 

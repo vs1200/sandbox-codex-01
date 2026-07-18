@@ -3,6 +3,8 @@ import { useGameStore } from "../../stores/gameStore";
 
 export function ModeSelector() {
   const startGame = useGameStore((s) => s.startGame);
+  const guideEnabled = useGameStore((s) => s.guideEnabled);
+  const setGuideEnabled = useGameStore((s) => s.setGuideEnabled);
 
   const handleStart = (mode: GameMode) => {
     startGame(mode);
@@ -36,15 +38,18 @@ export function ModeSelector() {
         >
           持ち時間モード
         </button>
-        <button
-          type="button"
-          onClick={() => handleStart("guide")}
-          className="px-8 py-4 bg-bg-secondary text-text border border-border rounded-lg text-lg font-bold
-						hover:border-accent transition-colors cursor-pointer"
-        >
-          ガイドモード
-        </button>
       </div>
+
+      <label className="flex items-center gap-2 text-text cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={guideEnabled}
+          onChange={(e) => setGuideEnabled(e.target.checked)}
+          className="w-4 h-4 accent-accent cursor-pointer"
+        />
+        <span className="text-sm font-bold">おすすめ配置を表示する</span>
+      </label>
+
       <p className="text-text-dim text-sm max-w-md text-center">
         無限モード: できるだけ長くRENを繋ぎ続けましょう
         <br />
@@ -52,7 +57,8 @@ export function ModeSelector() {
         <br />
         持ち時間モード: 10秒から始まり、タイムアップまでの最大RENを競います
         <br />
-        ガイドモード: ゲームオーバー回避のおすすめ配置を提案します
+        おすすめ配置を表示する:
+        どのモードでもゲームオーバー回避のおすすめ配置を提案します
       </p>
     </div>
   );
