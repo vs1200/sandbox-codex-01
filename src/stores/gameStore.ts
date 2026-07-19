@@ -170,9 +170,10 @@ function persistRankingIfNeeded(
 
   const mode = state.mode;
   const current = state.rankings[mode];
+  // 同点の場合は新しい記録を上位として扱い、満杯でもランキングに追加されるようにする
   const merged = sortRankings(mode, [
-    ...current,
     { value: scoreValue, achievedAt: new Date().toISOString() },
+    ...current,
   ]).slice(0, MAX_RANKING_ITEMS);
   const rankings = { ...state.rankings, [mode]: merged };
   saveRankings(rankings);
