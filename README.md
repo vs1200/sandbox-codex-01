@@ -5,4 +5,4 @@
 - 仕様書: [docs/specification.md](./docs/specification.md)
 
 ## 成果物
-- https://vs1200.github.io/sandbox-codex-01/
+- https://vs1200.github.io/tetris-ren-ren/
